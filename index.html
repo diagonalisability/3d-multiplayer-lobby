@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<!-- #001427 #708D81 #F4D58D #BF0603 #8D0801 -->
+<head>
+	<meta charset="UTF-8">
+	<style>
+		:root {
+			font-family: sans-serif;
+		}
+		@media all and (orientation: portrait) {
+			:root {
+				font-size: 2vh !important;
+			}
+			#me {
+				display:block;
+				height: 10em;
+				width: 10em;
+				margin:auto !important;
+			}
+		}
+		@media all and (orientation: landscape) {
+			h1 {
+				padding-left: 2em;
+			}
+			#me {
+				height: 8em;
+				float: left;
+			}
+		}
+		#top-wrapper {
+			min-height: calc(100vh - 5em);
+		}
+		header > p {
+			color: white;
+			font-size: 1.3em;
+		}
+		body {
+			margin: 0;
+			padding: 0;
+			background-color: #011936;
+		}
+		#me {
+			/*float: left;*/
+			border: 1em solid #F4D58D;
+			border-radius: 50%;
+			margin-right: 2em;
+		}
+		header {
+			max-width: 50em;
+			overflow: auto;
+			margin: auto;
+			padding: .5em 1em .5em;
+			background-color: #246EB9;
+		}
+		h1 {
+			vertical-align: middle;
+			color: white;
+		/*	background-color: white; */
+		}
+		#centre-column {
+			background-color: #F4D58D;
+			max-width: 60ch;
+			padding: 1em;
+			margin: auto;
+		}
+		p:first-child {
+			margin: 0 0 0;
+		}
+		p {
+			margin: 1em 0 0;
+		}
+		#projects-flexbox {
+			display: flex;
+			flex-wrap: wrap;
+			margin: auto;
+			margin-bottom: 1em;
+			max-width: calc(100vw - 20px);
+			align-items: top;
+			justify-content: center;
+		}		
+		figure {
+			margin: 0;
+		}
+		figure > img {
+			display: block;
+			width: 15em;
+			border-radius: 1em;
+		}
+		figure > figcaption {
+			display: block;
+			margin-top: 0.5em;
+			text-align: center;
+			font-size: 1.4em;
+		}
+		figure > .details {
+			display: none;
+		}
+		.expand > .details {
+			open: open;
+			display: block;
+		}
+		.figure-wrapper {
+			width: 15em;
+			overflow: hidden;
+			border: 0.4em solid #246EB9;
+			background-color: #F4D58D;
+			margin: 1em 1em 0;
+			padding: 1em;
+			transition: height 100ms;
+			height: auto;
+			border-radius: 1em;
+		}
+		.figure-wrapper:hover {
+			border: 0.4em solid white;
+		}
+		footer {
+			max-width: 50em;
+			height: 5em;
+			margin-left: calc(max((100vw - 50em)/2,0px));
+			width: 100%;
+			display: flex;
+			background-color: #246EB9;
+			justify-content: center;
+		}
+		.contact {
+			background-color: #F4D58D;
+			border-radius: 1em;
+			margin: 1em;
+			padding: 1em;
+		}
+	</style>
+	<script language="javascript">
+		function recomputeHeight(figure) {
+			// triggers the css height animation
+			figure.parentNode.style.height= figure.clientHeight + 'px';
+		}
+		function recomputeHeights() {
+			Array.from(document.getElementsByTagName('figure')).forEach(figure => {
+				recomputeHeight(figure);
+			});
+		}
+		window.addEventListener('load',()=>{
+			recomputeHeights();
+			const flexItems= document.getElementById('projects-flexbox').children;
+			let prevHeight= -100, rowC= 0;
+			for(let i=0; i<flexItems.length; ++i) {
+				const height= flexItems[i].getBoundingClientRect().top;
+				if(prevHeight != height)
+					++rowC;
+				prevHeight= height;
+			}
+			let oldFocused= null;
+			Array.from(document.getElementsByTagName('figure')).forEach(figure => {
+				if(rowC == 1) {
+					figure.classList.add('expand');
+					return;
+				}
+				figure.addEventListener('click',()=>{
+					if(oldFocused) {
+						oldFocused.classList.remove('expand');
+						recomputeHeight(oldFocused);
+						if(oldFocused == figure) {
+							oldFocused= null;
+							return;
+						}
+					}
+					(oldFocused= figure).classList.add('expand');
+					recomputeHeight(figure);					
+				});
+			});
+			recomputeHeights();
+			window.addEventListener('resize',recomputeHeights,false);
+		},true);
+	</script>
+</head>
+<body>
+<div id=top-wrapper>
+	<header>
+		<img id=me src="me.png"/><h1>Hi, I'm David Jacewicz!</h1><p>I'm a first-year student at the University of Waterloo, pursuing a degree in computer science.</p><p>Check out my projects:</p>
+	</header>
+	<section id=projects-flexbox>
+		<div class='figure-wrapper'><figure>
+			<img src=project-thumbnails/lagtrain.png>
+			<figcaption>Terminal Video Player</figcaption>
+			<div class=details>Plays any video on a terminal by converting frames to grayscale in realtime using LibAV's C API. <a href="https://github.com/diagonalisability/terminal-video-player">Check&nbsp;it&nbsp;out!</a></div>
+		</figure></div>
+		<div class='figure-wrapper'><figure>
+			<img src=project-thumbnails/torchat.jpg>
+			<figcaption>Tor Chat</figcaption>
+			<div class=details>A chat app which enables two peers to communicate by sending messages and files through Tor onion services. <a href="https://github.com/diagonalisability/p2p-tor-chat">Check&nbsp;it&nbsp;out!</a></div>
+		</figure></div>
+		<div class='figure-wrapper'><figure>
+			<img src=project-thumbnails/lwjgl-maze-game.png>
+			<figcaption>Maze Game</figcaption>
+			<div class=details>A 3D puzzle game from my grade 12 CS final project. Uses LWJGL, a lightweight wrapper over OpenGL for rendering. <a href="https://github.com/diagonalisability/lwjgl-maze-game">Check&nbsp;it&nbsp;out!</a></div>
+		</figure></div>
+		<div class='figure-wrapper'><figure>
+			<img src=project-thumbnails/rnjogger.jpg>
+			<figcaption>RNJogger (Work in Progress)</figcaption>
+			<div class=details>An Android app that I made with a group to generate a random jogging route for the user to jog around their neighbourhood. <a href="https://github.com/haritkapadia/random-running-app">Check&nbsp;it&nbsp;out!</a></div>
+		</figure></div>
+	</section>
+</div>
+<footer>
+	<a href="https://github.com/diagonalisability" class=contact>Github</a>
+	<a href="mailto:djacewic@uwaterloo.ca" class=contact>Email</a>
+</footer>
+</body>
+</html>
