@@ -1,0 +1,73 @@
+== real-time player position synchronisation across a client-server network ==
+
+- clients send their position to the server
+- the server sends player positions out back to players
+- what each client does, for position information from every other player:
+	- interpolates between 2 frames of that info
+		- this requires the client to delay frame playback for an amount of time where it's statistically reasonable to expect that 2 frames of input from the remote player will be received
+	- alternatively, it's possible to do extrapolation, but this only looks decent if clients can also perform collision response
+		- this would be cool to do, since i'm going to create a simple physics engine anyway
+		- it's also hard to predict what players will do in general, such as whether they will run off a ledge or stop at the edge
+
+
+- let's do interpolation for now, since it seems more robust than extrapolation
+	- client
+		- networking thread
+			- currently: periodically sends position+velocity to the server
+			- ideally: periodically sends control events (eg. forward, left, jump) to the server
+	- server
+		- collects self-position updates from other players
+		- on an interval timer, sends out an update message:
+			- player count
+			- array of player-update structs:
+				- position
+				- velocity
+				- time
+		- players might be not in this list
+			- every player not in the list is either...
+				- not worth telling the client about an update (too far away)
+				- hasn't moved
+				- hasn't sent an update
+			- the client treats all of these the same way, by skipping updating that remote player
+	- client
+		- networking thread
+			- when an update message is received, lock a shared inter-thread-update buffer and write all pos updates to it
+		- rendering thread
+			- when it's time to render a frame
+			- lock the inter-thread-update buffer
+			- process all the updates and delete them from the buffer
+			- unlock the buffer as soon as possible
+			- store, for each remote player
+				- the interpolation delay (interpolation time= current time - interpolation delay)
+				- a list of all the frames after the interpolation time, and one frame before the interpolation time
+			- interpolate
+				- use a different delay for each remote
+				- use this formula: https://en.wikipedia.org/wiki/Cubic_Hermite_spline#Interpolation_on_an_arbitrary_interval
+					- i got it from here: https://gafferongames.com/post/snapshot_interpolation
+					- it's apparently not necessary to perform high-order interpolation on orientations
+				- the formula will match the given frame velocities
+				- if the interpolation time is past the most recent frame, clamp to the most recent frame
+
+- possible problem:
+	- clients could wait for a while (eg. a minute) then send a burst of actions corresponding to the last minute
+	- this wouldn't give other players time to react to these actions, but the actions would be accepted by the server as legitimate
+	eg. in a capture-the-flag match, a player could use this to zoom across the map and back to steal the enemy's flag
+	- possible solutions:
+		0. players shouldn't be able to timestamp their positions (the authouritative timestamp associated with an action is when the server processes the message)
+			- high-latency players can't perform any time-sensitive operations, like shooting another player, or flying a plane through a tunnel
+		1. player actions beyond a certain time in the past (5s) won't be accepted
+			- high-latency players can't play
+		2. the server won't fast-forward through the events received from a particular player faster what is humanly perceivable
+			eg. no faster than 1.2x normal speed
+			- to me, this sounds like the best solution, because it still allows people to play with arbitrarily high latency
+			- this still poses a problem for competitive play, because high-latency players can locally see and shoot enemies before enemies can see them
+		3. a combination of 0 and 2
+			- players timestamp their events
+				- these timestamps aren't what gets sent to other clients
+				- they are used to control the playback of events on the server, to pause if events are being processed too quickly
+			- a high-latency player A can still locally kill enemies who can't see A, but a kill won't be legitimised until the server plays through the events leading up to the kill
+			- if, while those events are being processed by the server, the server processes an event from another player that kills A, the rest of A's events are voided
+			- to me, this sounds like the best option
+		4. in a competitive game, lag compensation for detecting hits can also be capped at something like 5 seconds
+			- this way, players can rest assured that they don't need to defend their whole worldline from time travelers, only the last 5 seconds of it
+			- i am not making a competitive game though, so i won't implement this
